@@ -5,4 +5,4 @@ docker-compose up -d
 echo
 echo "Waiting for the containers to boot..."
 sleep 5
-docker-compose exec app ./benchmark
+docker-compose exec app ./benchmark $@

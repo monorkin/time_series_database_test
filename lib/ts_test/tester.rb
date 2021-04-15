@@ -4,11 +4,16 @@ require 'active_support'
 
 module TsTest
   class Tester
+    DEFAULT_OPTIONS = { prepare: true, teardown: true }.freeze
+
     attr_reader :database
     attr_reader :options
 
-    def self.for(database_name, options = { setup: true })
-      new(database: database_name, options: options)
+    def self.for(database_name, options = {})
+      new(
+        database: database_name,
+        options: DEFAULT_OPTIONS.merge(options)
+      )
     end
 
     def initialize(database:, options: {})
@@ -17,19 +22,33 @@ module TsTest
     end
 
     def run(case_name, print_result: true)
+      return if skip_tests?
+
       runner.run(case_name&.to_s&.downcase&.to_sym)
+
       print_result! if print_result
     end
 
     def run_all
-      original_value = runner.options[:setup]
-      runner.options[:setup] = false
+      puts 'Running all tests' if verbose?
+      original_values = runner.options.slice(:prepare, :teardown)
+      runner.options.merge!(prepare: false, teardown: false)
 
-      runner.prepare! if runner.respond_to?(:prepare!)
-      TsTest.config.fetch(:test_cases).each { |name| run(name, print_result: false) }
-      runner.teardown! if runner.respond_to?(:teardown!)
+      if runner.respond_to?(:prepare!) && original_values[:prepare]
+        puts 'Preparing the database' if verbose?
+        runner.prepare!
+      end
 
-      runner.options[:setup] = original_value
+      TsTest.config.fetch(:test_cases).each do |name|
+        run(name, print_result: false)
+      end
+
+      if runner.respond_to?(:teardown!) && original_values[:teardown]
+        puts 'Tearing down the database' if verbose?
+        runner.teardown!
+      end
+
+      runner.options.merge!(original_values)
 
       print_result!
     end
@@ -48,6 +67,14 @@ module TsTest
 
     def print_result!
       Reporter.new(runner, name: database).print!
+    end
+
+    def verbose?
+      !!options[:verbose]
+    end
+
+    def skip_tests?
+      !!options[:skip_tests]
     end
   end
 end

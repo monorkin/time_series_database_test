@@ -1,9 +1,39 @@
 #!/usr/bin/env ruby
 
+require 'optparse'
 require_relative './lib/ts_test'
 
+options = TsTest::Tester::DEFAULT_OPTIONS.deep_dup
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: benchmark [database [, database]] [options]'
+
+  opts.on('-v', '--[no-]verbose', 'Verbose logging') do |v|
+    options[:verbose] = v
+  end
+
+  opts.on('-p', '--[no-]prepare', 'Prepare the database before testing') do |v|
+    options[:prepare] = v
+  end
+
+  opts.on('-d', '--[no-]teardown', 'Teardown the database after testing') do |v|
+    options[:teardown] = v
+  end
+
+  opts.on('-s', '--[no-]skip-tests', 'Teardown the database after testing') do |v|
+    options[:skip_tests] = v
+  end
+end.parse!
+
+if options[:verbose]
+  puts "OPTIONS:"
+  options.each do |key, value|
+    puts "  #{key}: #{value}"
+  end
+end
+
 if ARGV.any?
-  ARGV.each { |database| TsTest.test(database) }
+  ARGV.each { |database| TsTest.test(database, options) }
 else
-  TsTest.test_all
+  TsTest.test_all(options)
 end

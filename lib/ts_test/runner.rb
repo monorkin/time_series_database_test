@@ -126,14 +126,6 @@ module TsTest
       end
     end
 
-    def parallel_simple_reads_and_random_writes_with_min_records
-      parallel_simple_reads_and_random_writes
-    end
-
-    def parallel_simple_reads_and_random_writes_with_max_records
-      parallel_simple_reads_and_random_writes
-    end
-
     def parallel_simple_reads_and_random_writes
       writers = TsTest.config.fetch(:parallel_writers).times.map do
         Thread.new do
@@ -149,18 +141,6 @@ module TsTest
 
       # Wait for all threads to finish
       [*readers, *writers].each(&:join)
-    end
-
-    def parallel_complex_reads_and_random_writes_with_min_records
-      parallel_complex_reads_and_random_writes
-    end
-
-    def parallel_complex_reads_and_sequential_writes_with_min_records
-      parallel_complex_reads_and_sequential_writes
-    end
-
-    def parallel_complex_reads_and_random_writes_with_max_records
-      parallel_complex_reads_and_random_writes
     end
 
     def parallel_complex_reads_and_random_writes
@@ -200,7 +180,9 @@ module TsTest
         Thread.new do
           10_000.times do
             event_model
-              .select('SUM(events.value), EXTRACT(year FROM events.created_at), COUNT(devices.id), COUNT(users.id)')
+              .select('SUM(events.value), '\
+                      'EXTRACT(year FROM events.created_at), '\
+                      'COUNT(devices.id), COUNT(users.id)')
               .joins(:device, :user)
               .group('EXTRACT(year FROM events.created_at)')
           end
@@ -215,33 +197,47 @@ module TsTest
     #                                UTILITIES                                 #
     ############################################################################
 
-    def run_all
-      TsTest.config.fetch(:test_cases, []).each { |case_name| run(case_name) }
-    end
-
     def run(case_name)
+      print "Testing #{self.class}##{case_name}" if verbose?
+
       unless respond_to?(case_name)
         raise(NotImplementedError,
               "#{self.class} doesn't implement test case #{case_name}")
       end
 
-      print "* Testing #{self.class}##{case_name}"
       results[case_name] ||= []
 
       start = Time.now.to_i
 
       begin
-        call_if_responds_to(:prepare!) if setup?
+        if prepare?
+          print ' Preparing DB' if verbose?
+          prep = Benchmark.measure { call_if_responds_to(:prepare!) }
+          print "(#{prep.total}s)" if verbose?
+        end
+
+        puts 'Preparing test...' if verbose?
         call_if_responds_to("#{case_name}_prepare!".to_sym)
+
+        puts 'Benchmarking...' if verbose?
         results[case_name] << Benchmark.measure(case_name) { public_send(case_name) }
       ensure
+        puts 'Tearing down test...' if verbose?
         call_if_responds_to("#{case_name}_teardown!".to_sym)
-        call_if_responds_to(:teardown!) if setup?
+
+        if teardown?
+          print ' Tearing down DB' if verbose?
+          prep = Benchmark.measure { call_if_responds_to(:teardown!) }
+          print "(#{prep.total}s)" if verbose?
+        end
       end
 
       finish = Time.now.to_i
-      print " - took #{finish - start}s to prepare, test and teardown"
-      puts
+
+      if verbose?
+        print " - took #{finish - start}s to prepare, test and teardown"
+        puts
+      end
 
       true
     end
@@ -252,8 +248,16 @@ module TsTest
       public_send(method_name) if respond_to?(method_name)
     end
 
-    def setup?
-      !!options[:setup]
+    def verbose?
+      !!options[:verbose]
+    end
+
+    def prepare?
+      !!options[:prepare]
+    end
+
+    def teardown?
+      !!options[:teardown]
     end
 
     def execute(sql)
