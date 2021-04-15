@@ -11,7 +11,7 @@ module TsTest
     def self.build_models_for(parent_model_class)
       @parent_model = parent_model_class
 
-      class_eval <<-RUBY
+      class_eval <<-RUBY, __FILE__, __LINE__ + 1
         class User < #{@parent_model}
           self.table_name = 'users'
 
@@ -131,11 +131,11 @@ module TsTest
     end
 
     def parallel_complex_reads_and_random_writes_with_min_records
-      parallel_complex_reads_and_writes
+      parallel_complex_reads_and_random_writes
     end
 
     def parallel_complex_reads_and_random_writes_with_max_records
-      parallel_complex_reads_and_writes
+      parallel_complex_reads_and_random_writes
     end
 
     def parallel_complex_reads_and_random_writes
@@ -149,7 +149,9 @@ module TsTest
         Thread.new do
           10_000.times do
             event_model
-              .select('SUM(events.value), EXTRACT(year FROM events.created_at), COUNT(devices.id), COUNT(users.id)')
+              .select('SUM(events.value), '\
+                      'EXTRACT(year FROM events.created_at), '\
+                      'COUNT(devices.id), COUNT(users.id)')
               .joins(:device, :user)
               .group('EXTRACT(year FROM events.created_at)')
           end
