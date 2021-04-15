@@ -103,10 +103,11 @@ module TsTest
       end
 
       def teardown!
-        drop_tables!
+        #drop_tables!
       end
 
       def drop_tables!
+        return
         event_model.connection.execute(
           <<~SQL
             DROP TABLE IF EXISTS events;
@@ -132,7 +133,7 @@ module TsTest
                    random()::text,
                    '{"foo": "bar"}',
                    (SELECT id FROM devices ORDER BY random() LIMIT 1),
-                   NOW() + (random() * (NOW() + '90 days' - NOW())) + '180 days'
+                   NOW()  +  (i * interval '1 minute')
             FROM generate_series(1, #{count}) s(i)
           SQL
         )
@@ -144,7 +145,7 @@ module TsTest
             INSERT INTO devices (name, user_id, created_at)
             SELECT MD5(random()::text),
                    (SELECT id FROM users ORDER BY random() LIMIT 1),
-                   NOW() + (random() * (NOW() + '90 days' - NOW())) + '90 day'
+                   NOW() +  +  (i * interval '1 minute')
             FROM generate_series(1, #{count}) s(i)
           SQL
         )
@@ -155,13 +156,14 @@ module TsTest
           <<~SQL
             INSERT INTO users (name, created_at)
             SELECT MD5(random()::text),
-                   NOW() + (random() * (NOW() + '90 days' - NOW()))
+                   NOW() +   (i * interval '1 minute')
             FROM generate_series(1, #{count}) s(i)
           SQL
         )
       end
 
       def truncate_tables!
+        return
         event_model.connection.execute('TRUNCATE TABLE events')
         event_model.connection.execute('TRUNCATE TABLE devices')
         event_model.connection.execute('TRUNCATE TABLE users')

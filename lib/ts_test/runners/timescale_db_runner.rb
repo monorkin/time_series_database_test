@@ -83,13 +83,7 @@ module TsTest
 
         event_model.connection.execute(
           <<~SQL
-            ALTER TABLE events ADD PRIMARY KEY (id, created_at);
-          SQL
-        )
-
-        event_model.connection.execute(
-          <<~SQL
-            SELECT create_hypertable('events', 'created_at');
+            SELECT create_hypertable('events', 'created_at', if_not_exists =>true);
           SQL
         )
       end
