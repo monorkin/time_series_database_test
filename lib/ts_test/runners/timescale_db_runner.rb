@@ -75,8 +75,6 @@ module TsTest
 
         super
 
-        require 'pry'; binding.pry
-
         event_model.connection.execute(
           <<~SQL
             ALTER TABLE events DROP CONSTRAINT events_pkey;

@@ -99,7 +99,7 @@ module TsTest
               "#{self.class} doesn't implement test case #{case_name}")
       end
 
-      print "  Testing #{self.class}##{case_name}"
+      print "* Testing #{self.class}##{case_name}"
       results[case_name] ||= []
 
       start = Time.now.to_i
