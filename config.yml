@@ -25,3 +25,4 @@ test_cases:
   # - parallel_simple_reads_and_random_writes_with_max_records
   - parallel_complex_reads_and_random_writes_with_min_records
   # - parallel_complex_reads_and_random_writes_with_max_records
+  # - parallel_complex_reads_and_sequential_writes_with_min_records

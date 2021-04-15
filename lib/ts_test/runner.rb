@@ -155,6 +155,10 @@ module TsTest
       parallel_complex_reads_and_random_writes
     end
 
+    def parallel_complex_reads_and_sequential_writes_with_min_records
+      parallel_complex_reads_and_sequential_writes
+    end
+
     def parallel_complex_reads_and_random_writes_with_max_records
       parallel_complex_reads_and_random_writes
     end
@@ -173,6 +177,30 @@ module TsTest
               .select('SUM(events.value), '\
                       'EXTRACT(year FROM events.created_at), '\
                       'COUNT(devices.id), COUNT(users.id)')
+              .joins(:device, :user)
+              .group('EXTRACT(year FROM events.created_at)')
+          end
+        end
+      end
+
+      # Wait for all threads to finish
+      [*readers, *writers].each(&:join)
+    end
+
+    def parallel_complex_reads_and_sequential_writes
+      writers = TsTest.config.fetch(:parallel_writers).times.map do
+        Thread.new do
+          10_000.times do |i|
+            event_model.random.tap { |r| r.created_at = i.minutes.ago }.save!
+          end
+        end
+      end
+
+      readers = TsTest.config.fetch(:parallel_readers).times.map do
+        Thread.new do
+          10_000.times do
+            event_model
+              .select('SUM(events.value), EXTRACT(year FROM events.created_at), COUNT(devices.id), COUNT(users.id)')
               .joins(:device, :user)
               .group('EXTRACT(year FROM events.created_at)')
           end

@@ -52,25 +52,11 @@ module TsTest
       end
 
       def teardown!
-        drop_tables!
+        #drop_tables!
       end
 
       def drop_tables!
-        execute(
-          <<~SQL
-            DROP TABLE IF EXISTS events;
-          SQL
-        )
-        execute(
-          <<~SQL
-            DROP TABLE IF EXISTS devices;
-          SQL
-        )
-        execute(
-          <<~SQL
-            DROP TABLE IF EXISTS users;
-          SQL
-        )
+        return
       end
 
       def insert_events!(count)
@@ -81,7 +67,7 @@ module TsTest
                    random()::text,
                    '{"foo": "bar"}',
                    (SELECT id FROM devices ORDER BY random() LIMIT 1),
-                   NOW() + (random() * (NOW() + '90 days' - NOW())) + '180 days'
+                   NOW()  +  (i * interval '1 minute')
             FROM generate_series(1, #{count}) s(i)
           SQL
         )
@@ -93,7 +79,7 @@ module TsTest
             INSERT INTO devices (name, user_id, created_at)
             SELECT MD5(random()::text),
                    (SELECT id FROM users ORDER BY random() LIMIT 1),
-                   NOW() + (random() * (NOW() + '90 days' - NOW())) + '90 day'
+                   NOW() +   (i * interval '1 minute')
             FROM generate_series(1, #{count}) s(i)
           SQL
         )
@@ -104,16 +90,14 @@ module TsTest
           <<~SQL
             INSERT INTO users (name, created_at)
             SELECT MD5(random()::text),
-                   NOW() + (random() * (NOW() + '90 days' - NOW()))
+                   NOW() +  (i * interval '1 minute')
             FROM generate_series(1, #{count}) s(i)
           SQL
         )
       end
 
       def truncate_tables!
-        execute('TRUNCATE TABLE events')
-        execute('TRUNCATE TABLE devices')
-        execute('TRUNCATE TABLE users')
+        return
       end
 
       def ten_thousand_random_inserts_prepare!
@@ -185,6 +169,10 @@ module TsTest
         insert_events!(TsTest.config.fetch(:min_records_in_table))
         finish = Time.now.to_i
         print "(#{finish - start}s)"
+      end
+
+      def parallel_complex_reads_and_sequential_writes_with_min_records_prepare!
+        parallel_complex_reads_and_random_writes_with_min_records_prepare!
       end
 
       def parallel_complex_reads_and_random_writes_with_min_records_teardown!

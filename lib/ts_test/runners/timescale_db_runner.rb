@@ -27,19 +27,13 @@ module TsTest
 
         execute(
           <<~SQL
-            ALTER TABLE events DROP CONSTRAINT events_pkey;
+            ALTER TABLE events DROP CONSTRAINT IF EXISTS events_pkey;
           SQL
         )
 
         execute(
           <<~SQL
-            ALTER TABLE events ADD PRIMARY KEY (id, created_at);
-          SQL
-        )
-
-        execute(
-          <<~SQL
-            SELECT create_hypertable('events', 'created_at');
+            SELECT create_hypertable('events', 'created_at', if_not_exists =>true);
           SQL
         )
       end
