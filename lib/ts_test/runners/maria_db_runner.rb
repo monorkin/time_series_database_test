@@ -18,7 +18,7 @@ module TsTest
         TsTest.config.dig(:databases, :maria_db)
       )
 
-      build_models_for MariaDbRecord
+      build_models_for MariaDbRecord, random_function: 'RAND()'
 
       def prepare!
         drop_tables!
@@ -54,6 +54,10 @@ module TsTest
             );
           SQL
         )
+
+        insert_users!(TsTest.config.fetch(:user_count))
+        insert_devices!(TsTest.config.fetch(:device_count))
+        insert_events!(TsTest.config.fetch(:event_count))
       end
 
       def teardown!
@@ -76,6 +80,46 @@ module TsTest
             DROP TABLE IF EXISTS users;
           SQL
         )
+      end
+
+      def insert_events!(count)
+        count.times do |i|
+          execute(
+            <<~SQL
+              INSERT INTO events (value, action, image_data, device_id, created_at)
+              VALUES (RAND(),
+                     MD5(RAND()),
+                     '{"foo": "bar"}',
+                     (SELECT id FROM devices ORDER BY RAND() LIMIT 1),
+                     TIMESTAMPADD(SECOND, #{i}, NOW()))
+            SQL
+          )
+        end
+      end
+
+      def insert_devices!(count)
+        count.times do |i|
+          execute(
+            <<~SQL
+              INSERT INTO devices (name, user_id, created_at)
+              VALUES (MD5(RAND()),
+                     (SELECT id FROM users ORDER BY RAND() LIMIT 1),
+                     TIMESTAMPADD(SECOND, #{i}, NOW()))
+            SQL
+          )
+        end
+      end
+
+      def insert_users!(count)
+        count.times do |i|
+          execute(
+            <<~SQL
+              INSERT INTO users (name, created_at)
+              VALUES (MD5(RAND()),
+                     TIMESTAMPADD(SECOND, #{i}, NOW()))
+            SQL
+          )
+        end
       end
     end
   end

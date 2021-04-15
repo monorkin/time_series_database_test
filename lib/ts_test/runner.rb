@@ -6,6 +6,8 @@ require 'uri'
 
 module TsTest
   class Runner
+    DEFUALT_MODEL_OPTIONS = { random_function: 'random()' }.freeze
+
     attr_reader :options
     attr_reader :results
 
@@ -29,7 +31,8 @@ module TsTest
       model.connection.execute(sql)
     end
 
-    def self.build_models_for(parent_model_class)
+    def self.build_models_for(parent_model_class, options = {})
+      options = DEFUALT_MODEL_OPTIONS.merge(options)
       @parent_model = parent_model_class
 
       class_eval <<-RUBY, __FILE__, __LINE__ + 1
@@ -56,7 +59,7 @@ module TsTest
           def self.random
             new(
               name: SecureRandom.hex,
-              user_id: User.order('random()').first&.id,
+              user_id: User.order('#{options[:random_function]}').first&.id,
               created_at: rand(180_000...360_000).hours.ago
             )
           end
@@ -75,7 +78,7 @@ module TsTest
               value: rand,
               action: ACTIONS.sample,
               image_data: { foo: 'bar' },
-              device_id: Device.order('random()').first&.id,
+              device_id: Device.order('#{options[:random_function]}').first&.id,
               created_at: rand(0...180_000).hours.ago
             )
           end
@@ -198,7 +201,7 @@ module TsTest
     ############################################################################
 
     def run(case_name)
-      print "Testing #{self.class}##{case_name}" if verbose?
+      puts "Testing #{self.class}##{case_name}" if verbose?
 
       unless respond_to?(case_name)
         raise(NotImplementedError,
@@ -211,9 +214,9 @@ module TsTest
 
       begin
         if prepare?
-          print ' Preparing DB' if verbose?
+          puts 'Preparing DB' if verbose?
           prep = Benchmark.measure { call_if_responds_to(:prepare!) }
-          print "(#{prep.total}s)" if verbose?
+          puts "Took: #{prep.total}s" if verbose?
         end
 
         puts 'Preparing test...' if verbose?
@@ -226,17 +229,16 @@ module TsTest
         call_if_responds_to("#{case_name}_teardown!".to_sym)
 
         if teardown?
-          print ' Tearing down DB' if verbose?
+          puts 'Tearing down DB' if verbose?
           prep = Benchmark.measure { call_if_responds_to(:teardown!) }
-          print "(#{prep.total}s)" if verbose?
+          puts "Took: #{prep.total}s" if verbose?
         end
       end
 
       finish = Time.now.to_i
 
       if verbose?
-        print " - took #{finish - start}s to prepare, test and teardown"
-        puts
+        puts "Test took #{finish - start}s to prepare, test and teardown"
       end
 
       true
@@ -245,7 +247,10 @@ module TsTest
     private
 
     def call_if_responds_to(method_name)
-      public_send(method_name) if respond_to?(method_name)
+      return false unless respond_to?(method_name)
+
+      puts "Executing #{self.class}##{method_name}" if verbose?
+      public_send(method_name)
     end
 
     def verbose?

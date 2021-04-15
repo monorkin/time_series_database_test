@@ -30,7 +30,7 @@ module TsTest
     end
 
     def run_all
-      puts 'Running all tests' if verbose?
+      puts "Running all tests for #{database}" if verbose?
       original_values = runner.options.slice(:prepare, :teardown)
       runner.options.merge!(prepare: false, teardown: false)
 

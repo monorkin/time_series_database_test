@@ -33,7 +33,10 @@ module TsTest
 
         execute(
           <<~SQL
-            SELECT create_hypertable('events', 'created_at', if_not_exists =>true);
+            SELECT create_hypertable('events',
+                                     'created_at',
+                                     if_not_exists => true,
+                                     migrate_data => true);
           SQL
         )
       end
