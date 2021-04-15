@@ -1,11 +1,74 @@
 # frozen_string_literal: true
 
 require 'benchmark'
+require 'securerandom'
 
 module TsTest
   class Runner
     attr_reader :options
     attr_reader :results
+
+    def self.build_models_for(parent_model_class)
+      @parent_model = parent_model_class
+
+      class_eval <<-RUBY
+        class User < #{@parent_model}
+          self.table_name = 'users'
+
+          has_many :devices
+          has_many :events, through: :devices
+
+          def self.random
+            new(
+              name: SecureRandom.hex,
+              created_at: rand(360_000...540_000).hours.ago
+            )
+          end
+        end
+
+        class Device < #{@parent_model}
+          self.table_name = 'devices'
+
+          belongs_to :user
+          has_many :events
+
+          def self.random
+            new(
+              name: SecureRandom.hex,
+              user_id: User.order('random()').first&.id,
+              created_at: rand(180_000...360_000).hours.ago
+            )
+          end
+        end
+
+        class Event < #{@parent_model}
+          ACTIONS = %i[create update destroy].freeze
+
+          self.table_name = 'events'
+
+          belongs_to :device
+          has_one :user, through: :device
+
+          def self.random
+            new(
+              value: rand,
+              action: ACTIONS.sample,
+              image_data: { foo: 'bar' },
+              device_id: Device.order('random()').first&.id,
+              created_at: rand(0...180_000).hours.ago
+            )
+          end
+        end
+
+        model :user, User
+        model :device, Device
+        model :event, Event
+      RUBY
+    end
+
+    def self.parent_model
+      @parent_model
+    end
 
     def self.model(name, model_class = nil)
       @models ||= {}
@@ -140,6 +203,15 @@ module TsTest
 
     def setup?
       !!options[:setup]
+    end
+
+    def execute(sql)
+      parent_model.connection.execute(sql)
+    end
+
+    def parent_model
+      self.class.parent_model ||
+        raise("No parent model defined for runner #{self.class}")
     end
 
     def event_model
