@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+require_relative './lib/ts_test'
+
+if ARGV.any?
+  ARGV.each { |database| TsTest.test(database) }
+else
+  TsTest.test_all
+end

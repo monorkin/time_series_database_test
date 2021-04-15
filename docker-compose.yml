@@ -1,0 +1,35 @@
+version: '3.6'
+services:
+  app:
+    build:
+      context: .
+    image: 'ts_test:dev'
+    command: '/bin/sh -c "while true; do sleep 10; done;"'
+    volumes:
+      - .:/app
+
+  mariadb:
+    image: mariadb:10.5.9
+    environment:
+      MYSQL_ROOT_PASSWORD: password1234
+    ports:
+      - 3306:3306
+
+  postgres:
+    image: postgres:13.2-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5432:5432
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg12
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5433:5432
+
+  clickhouse:
+    image: yandex/clickhouse-server:21.3.6.55-alpine
+    ports:
+      - 5434:5432

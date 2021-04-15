@@ -1,0 +1,10 @@
+source 'https://rubygems.org'
+
+gem 'activerecord'
+gem 'activesupport'
+gem 'click_house'
+gem 'mysql2', '~> 0.5.3'
+gem 'pg'
+gem 'pry'
+gem 'terminal-table'
+gem 'zeitwerk'
