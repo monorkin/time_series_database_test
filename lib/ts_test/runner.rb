@@ -77,7 +77,6 @@ module TsTest
               .select('SUM(events.value), EXTRACT(year FROM events.created_at), COUNT(devices.id), COUNT(users.id)')
               .joins(:device, :user)
               .group('EXTRACT(year FROM events.created_at)')
-              .order(id: :desc).first
           end
         end
       end
