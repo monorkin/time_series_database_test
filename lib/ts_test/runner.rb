@@ -2,11 +2,32 @@
 
 require 'benchmark'
 require 'securerandom'
+require 'uri'
 
 module TsTest
   class Runner
     attr_reader :options
     attr_reader :results
+
+    def self.execute(connection_options, sql)
+      model = Class.new(ActiveRecord::Base) do
+        self.abstract_class = true
+      end
+
+      const_name = "Model#{SecureRandom.hex(16)}"
+      const_set(const_name, model)
+
+      opts = connection_options.deep_dup
+      if opts.key?(:url)
+        uri = URI(opts[:url])
+        uri.path = ''
+        opts[:url] = uri.to_s
+      end
+      opts[:database] = nil if opts.key?(:database)
+
+      model.establish_connection(opts)
+      model.connection.execute(sql)
+    end
 
     def self.build_models_for(parent_model_class)
       @parent_model = parent_model_class
@@ -106,11 +127,11 @@ module TsTest
     end
 
     def parallel_simple_reads_and_random_writes_with_min_records
-      parallel_simple_reads_and_writes
+      parallel_simple_reads_and_random_writes
     end
 
     def parallel_simple_reads_and_random_writes_with_max_records
-      parallel_simple_reads_and_writes
+      parallel_simple_reads_and_random_writes
     end
 
     def parallel_simple_reads_and_random_writes
