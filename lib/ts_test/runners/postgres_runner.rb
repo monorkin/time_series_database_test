@@ -145,7 +145,7 @@ module TsTest
             INSERT INTO devices (name, user_id, created_at)
             SELECT MD5(random()::text),
                    (SELECT id FROM users ORDER BY random() LIMIT 1),
-                   NOW() +  +  (i * interval '1 minute')
+                   NOW() +   (i * interval '1 minute')
             FROM generate_series(1, #{count}) s(i)
           SQL
         )
@@ -156,7 +156,7 @@ module TsTest
           <<~SQL
             INSERT INTO users (name, created_at)
             SELECT MD5(random()::text),
-                   NOW() +   (i * interval '1 minute')
+                   NOW() +  (i * interval '1 minute')
             FROM generate_series(1, #{count}) s(i)
           SQL
         )
