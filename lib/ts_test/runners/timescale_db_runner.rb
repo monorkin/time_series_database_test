@@ -77,7 +77,7 @@ module TsTest
 
         event_model.connection.execute(
           <<~SQL
-            ALTER TABLE events DROP CONSTRAINT events_pkey;
+            ALTER TABLE events DROP CONSTRAINT IF EXISTS events_pkey;
           SQL
         )
 

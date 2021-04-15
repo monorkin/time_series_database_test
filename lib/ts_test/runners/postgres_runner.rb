@@ -240,6 +240,10 @@ module TsTest
         print "(#{finish - start}s)"
       end
 
+      def parallel_complex_reads_and_sequential_writes_with_min_records_prepare!
+        parallel_complex_reads_and_random_writes_with_min_records_prepare!
+      end
+
       def parallel_complex_reads_and_random_writes_with_min_records_teardown!
         truncate_tables!
       end
