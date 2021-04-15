@@ -1,11 +1,95 @@
 # frozen_string_literal: true
 
 require 'benchmark'
+require 'securerandom'
+require 'uri'
 
 module TsTest
   class Runner
     attr_reader :options
     attr_reader :results
+
+    def self.execute(connection_options, sql)
+      model = Class.new(ActiveRecord::Base) do
+        self.abstract_class = true
+      end
+
+      const_name = "Model#{SecureRandom.hex(16)}"
+      const_set(const_name, model)
+
+      opts = connection_options.deep_dup
+      if opts.key?(:url)
+        uri = URI(opts[:url])
+        uri.path = ''
+        opts[:url] = uri.to_s
+      end
+      opts[:database] = nil if opts.key?(:database)
+
+      model.establish_connection(opts)
+      model.connection.execute(sql)
+    end
+
+    def self.build_models_for(parent_model_class)
+      @parent_model = parent_model_class
+
+      class_eval <<-RUBY, __FILE__, __LINE__ + 1
+        class User < #{@parent_model}
+          self.table_name = 'users'
+
+          has_many :devices
+          has_many :events, through: :devices
+
+          def self.random
+            new(
+              name: SecureRandom.hex,
+              created_at: rand(360_000...540_000).hours.ago
+            )
+          end
+        end
+
+        class Device < #{@parent_model}
+          self.table_name = 'devices'
+
+          belongs_to :user
+          has_many :events
+
+          def self.random
+            new(
+              name: SecureRandom.hex,
+              user_id: User.order('random()').first&.id,
+              created_at: rand(180_000...360_000).hours.ago
+            )
+          end
+        end
+
+        class Event < #{@parent_model}
+          ACTIONS = %i[create update destroy].freeze
+
+          self.table_name = 'events'
+
+          belongs_to :device
+          has_one :user, through: :device
+
+          def self.random
+            new(
+              value: rand,
+              action: ACTIONS.sample,
+              image_data: { foo: 'bar' },
+              device_id: Device.order('random()').first&.id,
+              created_at: rand(0...180_000).hours.ago
+            )
+          end
+        end
+
+        model :user, User
+        model :device, Device
+        model :event, Event
+      RUBY
+    end
+
+    def self.parent_model
+      @parent_model
+    end
 
     def self.model(name, model_class = nil)
       @models ||= {}
@@ -43,11 +127,11 @@ module TsTest
     end
 
     def parallel_simple_reads_and_random_writes_with_min_records
-      parallel_simple_reads_and_writes
+      parallel_simple_reads_and_random_writes
     end
 
     def parallel_simple_reads_and_random_writes_with_max_records
-      parallel_simple_reads_and_writes
+      parallel_simple_reads_and_random_writes
     end
 
     def parallel_simple_reads_and_random_writes
@@ -69,10 +153,6 @@ module TsTest
 
     def parallel_complex_reads_and_random_writes_with_min_records
       parallel_complex_reads_and_random_writes
-    end
-
-    def parallel_complex_reads_and_sequential_writes_with_min_records
-      parallel_complex_reads_and_sequential_writes
     end
 
     def parallel_complex_reads_and_random_writes_with_max_records
@@ -101,6 +181,10 @@ module TsTest
       [*readers, *writers].each(&:join)
     end
 
+    def parallel_complex_reads_and_sequential_writes_with_min_records
+      parallel_complex_reads_and_sequential_writes
+    end
+
     def parallel_complex_reads_and_sequential_writes
       writers = TsTest.config.fetch(:parallel_writers).times.map do
         Thread.new do
@@ -114,7 +198,9 @@ module TsTest
         Thread.new do
           10_000.times do
             event_model
-              .select('SUM(events.value), EXTRACT(year FROM events.created_at), COUNT(devices.id), COUNT(users.id)')
+              .select('SUM(events.value), '\
+                      'EXTRACT(year FROM events.created_at), '\
+                      'COUNT(devices.id), COUNT(users.id)')
               .joins(:device, :user)
               .group('EXTRACT(year FROM events.created_at)')
           end
@@ -168,6 +254,15 @@ module TsTest
 
     def setup?
       !!options[:setup]
+    end
+
+    def execute(sql)
+      parent_model.connection.execute(sql)
+    end
+
+    def parent_model
+      self.class.parent_model ||
+        raise("No parent model defined for runner #{self.class}")
     end
 
     def event_model

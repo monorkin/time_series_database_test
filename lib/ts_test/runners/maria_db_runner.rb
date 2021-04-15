@@ -1,19 +1,21 @@
 # frozen_string_literal: true
 
-require 'pg'
+require 'mysql2'
 
 module TsTest
   module Runners
-    class PostgresRunner < Runner
-      class PostgresRecord < ActiveRecord::Base
+    class MariaDbRunner < Runner
+      class MariaDbRecord < ActiveRecord::Base
         self.abstract_class = true
       end
 
-      PostgresRecord.establish_connection(
-        TsTest.config.dig(:databases, :postgres)
+      execute(TsTest.config.dig(:databases, :maria_db), "CREATE DATABASE IF NOT EXISTS test;")
+
+      MariaDbRecord.establish_connection(
+        TsTest.config.dig(:databases, :maria_db)
       )
 
-      build_models_for PostgresRecord
+      build_models_for MariaDbRecord
 
       def prepare!
         drop_tables!
@@ -43,7 +45,7 @@ module TsTest
               id SERIAL PRIMARY KEY,
               value FLOAT,
               action VARCHAR(255),
-              image_data JSONB,
+              image_data JSON,
               device_id INT8,
               created_at TIMESTAMP
             );
@@ -52,11 +54,10 @@ module TsTest
       end
 
       def teardown!
-        #drop_tables!
+        drop_tables!
       end
 
       def drop_tables!
-        return
         execute(
           <<~SQL
             DROP TABLE IF EXISTS events;
@@ -82,7 +83,7 @@ module TsTest
                    random()::text,
                    '{"foo": "bar"}',
                    (SELECT id FROM devices ORDER BY random() LIMIT 1),
-                   NOW()  +  (i * interval '1 minute')
+                   NOW() + (random() * (NOW() + '90 days' - NOW())) + '180 days'
             FROM generate_series(1, #{count}) s(i)
           SQL
         )
@@ -94,7 +95,7 @@ module TsTest
             INSERT INTO devices (name, user_id, created_at)
             SELECT MD5(random()::text),
                    (SELECT id FROM users ORDER BY random() LIMIT 1),
-                   NOW() +   (i * interval '1 minute')
+                   NOW() + (random() * (NOW() + '90 days' - NOW())) + '90 day'
             FROM generate_series(1, #{count}) s(i)
           SQL
         )
@@ -105,14 +106,13 @@ module TsTest
           <<~SQL
             INSERT INTO users (name, created_at)
             SELECT MD5(random()::text),
-                   NOW() +  (i * interval '1 minute')
+                   NOW() + (random() * (NOW() + '90 days' - NOW()))
             FROM generate_series(1, #{count}) s(i)
           SQL
         )
       end
 
       def truncate_tables!
-        return
         execute('TRUNCATE TABLE events')
         execute('TRUNCATE TABLE devices')
         execute('TRUNCATE TABLE users')
@@ -187,10 +187,6 @@ module TsTest
         insert_events!(TsTest.config.fetch(:min_records_in_table))
         finish = Time.now.to_i
         print "(#{finish - start}s)"
-      end
-
-      def parallel_complex_reads_and_sequential_writes_with_min_records_prepare!
-        parallel_complex_reads_and_random_writes_with_min_records_prepare!
       end
 
       def parallel_complex_reads_and_random_writes_with_min_records_teardown!
