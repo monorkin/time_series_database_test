@@ -26,19 +26,31 @@ module TsTest
     #                                TEST CASES                                #
     ############################################################################
 
-    def ten_thousand_inserts
+    def ten_thousand_random_inserts
       10_000.times { event_model.random.save! }
     end
 
-    def parallel_simple_reads_and_writes_with_min_records
+    def ten_thousand_sequential_ascending_inserts
+      10_000.times do |i|
+        event_model.random.tap { |r| r.created_at = i.minutes.from_now }.save!
+      end
+    end
+
+    def ten_thousand_sequential_descending_inserts
+      10_000.times do |i|
+        event_model.random.tap { |r| r.created_at = i.minutes.ago }.save!
+      end
+    end
+
+    def parallel_simple_reads_and_random_writes_with_min_records
       parallel_simple_reads_and_writes
     end
 
-    def parallel_simple_reads_and_writes_with_max_records
+    def parallel_simple_reads_and_random_writes_with_max_records
       parallel_simple_reads_and_writes
     end
 
-    def parallel_simple_reads_and_writes
+    def parallel_simple_reads_and_random_writes
       writers = TsTest.config.fetch(:parallel_writers).times.map do
         Thread.new do
           10_000.times { event_model.random.save! }
@@ -55,15 +67,15 @@ module TsTest
       [*readers, *writers].each(&:join)
     end
 
-    def parallel_complex_reads_and_writes_with_min_records
+    def parallel_complex_reads_and_random_writes_with_min_records
       parallel_complex_reads_and_writes
     end
 
-    def parallel_complex_reads_and_writes_with_max_records
+    def parallel_complex_reads_and_random_writes_with_max_records
       parallel_complex_reads_and_writes
     end
 
-    def parallel_complex_reads_and_writes
+    def parallel_complex_reads_and_random_writes
       writers = TsTest.config.fetch(:parallel_writers).times.map do
         Thread.new do
           10_000.times { event_model.random.save! }

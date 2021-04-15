@@ -167,17 +167,37 @@ module TsTest
         event_model.connection.execute('TRUNCATE TABLE users')
       end
 
-      def ten_thousand_inserts_prepare!
+      def ten_thousand_random_inserts_prepare!
         truncate_tables!
         insert_users!(3)
         insert_devices!(3)
       end
 
-      def ten_thousand_inserts_teardown!
+      def ten_thousand_random_inserts_teardown!
         truncate_tables!
       end
 
-      def parallel_simple_reads_and_writes_with_min_records_prepare!
+      def ten_thousand_sequential_ascending_inserts_prepare!
+        truncate_tables!
+        insert_users!(3)
+        insert_devices!(3)
+      end
+
+      def ten_thousand_sequential_ascending_inserts_teardown!
+        truncate_tables!
+      end
+
+      def ten_thousand_sequential_descending_inserts_prepare!
+        truncate_tables!
+        insert_users!(3)
+        insert_devices!(3)
+      end
+
+      def ten_thousand_sequential_descending_inserts_teardown!
+        truncate_tables!
+      end
+
+      def parallel_simple_reads_and_random_writes_with_min_records_prepare!
         print ' - P'
         start = Time.now.to_i
         truncate_tables!
@@ -188,11 +208,11 @@ module TsTest
         print "(#{finish - start}s)"
       end
 
-      def parallel_simple_reads_and_writes_with_min_records_teardown!
+      def parallel_simple_reads_and_random_writes_with_min_records_teardown!
         truncate_tables!
       end
 
-      def parallel_simple_reads_and_writes_with_max_records_prepare!
+      def parallel_simple_reads_and_random_writes_with_max_records_prepare!
         print ' - P'
         start = Time.now.to_i
         truncate_tables!
@@ -203,11 +223,11 @@ module TsTest
         print "(#{finish - start}s)"
       end
 
-      def parallel_simple_reads_and_writes_with_max_records_teardown!
+      def parallel_simple_reads_and_random_writes_with_max_records_teardown!
         truncate_tables!
       end
 
-      def parallel_complex_reads_and_writes_with_min_records_prepare!
+      def parallel_complex_reads_and_random_writes_with_min_records_prepare!
         print ' - P'
         start = Time.now.to_i
         truncate_tables!
@@ -218,11 +238,11 @@ module TsTest
         print "(#{finish - start}s)"
       end
 
-      def parallel_complex_reads_and_writes_with_min_records_teardown!
+      def parallel_complex_reads_and_random_writes_with_min_records_teardown!
         truncate_tables!
       end
 
-      def parallel_complex_reads_and_writes_with_max_records_prepare!
+      def parallel_complex_reads_and_random_writes_with_max_records_prepare!
         print ' - P'
         start = Time.now.to_i
         truncate_tables!
@@ -233,7 +253,7 @@ module TsTest
         print "(#{finish - start}s)"
       end
 
-      def parallel_complex_reads_and_writes_with_max_records_teardown!
+      def parallel_complex_reads_and_random_writes_with_max_records_teardown!
         truncate_tables!
       end
     end

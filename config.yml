@@ -14,8 +14,10 @@ databases:
     pool: 20
 
 test_cases:
-  - ten_thousand_inserts
-  - parallel_simple_reads_and_writes_with_min_records
-  # - parallel_simple_reads_and_writes_with_max_records
-  - parallel_complex_reads_and_writes_with_min_records
-  # - parallel_complex_reads_and_writes_with_max_records
+  # - ten_thousand_random_inserts
+  - ten_thousand_sequential_ascending_inserts
+  - ten_thousand_sequential_descending_inserts
+  # - parallel_simple_reads_and_random_writes_with_min_records
+  # - parallel_simple_reads_and_random_writes_with_max_records
+  # - parallel_complex_reads_and_random_writes_with_min_records
+  # - parallel_complex_reads_and_random_writes_with_max_records
