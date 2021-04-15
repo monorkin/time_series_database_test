@@ -1,24 +1,25 @@
 # frozen_string_literal: true
 
-require 'mysql2'
+require 'click_house'
+require 'clickhouse-activerecord'
 
 module TsTest
   module Runners
-    class MariaDbRunner < Runner
-      class MariaDbRecord < ActiveRecord::Base
+    class ClickHouseRunner < Runner
+      class ClickHouseRecord < ActiveRecord::Base
         self.abstract_class = true
       end
 
       execute(
-        TsTest.config.dig(:databases, :maria_db),
+        TsTest.config.dig(:databases, :click_house),
         'CREATE DATABASE IF NOT EXISTS test;'
       )
 
-      MariaDbRecord.establish_connection(
-        TsTest.config.dig(:databases, :maria_db)
+      ClickHouseRecord.establish_connection(
+        TsTest.config.dig(:databases, :click_house)
       )
 
-      build_models_for MariaDbRecord, random_function: 'RAND()'
+      build_models_for ClickHouseRecord, random_function: 'RAND()'
 
       def prepare!
         drop_tables!
@@ -54,10 +55,10 @@ module TsTest
           <<~SQL
             CREATE TABLE IF NOT EXISTS events (
               id SERIAL PRIMARY KEY,
-              value FLOAT,
-              action VARCHAR(255),
-              image_data JSON,
-              device_id INT8,
+              value FLOAT64,
+              action STRING,
+              image_data STRING,
+              device_id UINT8,
               created_at TIMESTAMP
             );
           SQL

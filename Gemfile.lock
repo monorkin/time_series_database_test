@@ -1,3 +1,12 @@
+GIT
+  remote: https://github.com/bdevel/clickhouse-activerecord
+  revision: 6defa267aa0c9ed233db0f60c5187a70d2453d40
+  ref: rails-6.1-support
+  specs:
+    clickhouse-activerecord (0.4.11)
+      activerecord (>= 5.2)
+      bundler (>= 1.13.4)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -49,6 +58,7 @@ DEPENDENCIES
   activerecord
   activesupport
   click_house
+  clickhouse-activerecord!
   mysql2 (~> 0.5.3)
   pg
   pry

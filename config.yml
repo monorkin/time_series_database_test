@@ -6,6 +6,13 @@ parallel_readers: 2
 parallel_writers: 2
 
 databases:
+  # influx_db:
+  # elastic:
+  click_house:
+    adapter: clickhouse
+    database: test
+    host: clickhouse
+    pool: 20
   maria_db:
     adapter: mysql2
     url: 'mysql2://root:password1234@mariadb/test'

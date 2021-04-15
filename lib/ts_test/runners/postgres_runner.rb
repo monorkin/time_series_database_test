@@ -16,6 +16,8 @@ module TsTest
       build_models_for PostgresRecord
 
       def prepare!
+        puts 'Creating users table' if verbose?
+
         execute(
           <<~SQL
             CREATE TABLE IF NOT EXISTS users (
@@ -25,6 +27,9 @@ module TsTest
             );
           SQL
         )
+
+        puts 'Creating devices table' if verbose?
+
         execute(
           <<~SQL
             CREATE TABLE IF NOT EXISTS devices (
@@ -35,6 +40,9 @@ module TsTest
             );
           SQL
         )
+
+        puts 'Creating events table' if verbose?
+
         execute(
           <<~SQL
             CREATE TABLE IF NOT EXISTS events (
@@ -48,8 +56,13 @@ module TsTest
           SQL
         )
 
+        puts 'Creating users' if verbose?
         insert_users!(TsTest.config.fetch(:user_count))
+
+        puts 'Creating devices' if verbose?
         insert_devices!(TsTest.config.fetch(:device_count))
+
+        puts 'Creating events' if verbose?
         insert_events!(TsTest.config.fetch(:event_count))
       end
 
@@ -58,16 +71,24 @@ module TsTest
       end
 
       def drop_tables!
+        puts 'Dropping events table' if verbose?
+
         execute(
           <<~SQL
             DROP TABLE IF EXISTS events;
           SQL
         )
+
+        puts 'Dropping devices table' if verbose?
+
         execute(
           <<~SQL
             DROP TABLE IF EXISTS devices;
           SQL
         )
+
+        puts 'Dropping users table' if verbose?
+
         execute(
           <<~SQL
             DROP TABLE IF EXISTS users;
