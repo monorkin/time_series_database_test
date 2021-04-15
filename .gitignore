@@ -1,0 +1,9 @@
+# Utils
+/util_scripts
+
+# OS files
+.DS_store
+
+# Editor
+/tags
+*.swap
