@@ -69,7 +69,7 @@ module TsTest
       def prepare!
         drop_tables!
 
-        PostgresRecord.connection.execute(
+        event_model.connection.execute(
           <<~SQL
             CREATE TABLE IF NOT EXISTS users (
               id SERIAL PRIMARY KEY,
@@ -78,7 +78,7 @@ module TsTest
             );
           SQL
         )
-        PostgresRecord.connection.execute(
+        event_model.connection.execute(
           <<~SQL
             CREATE TABLE IF NOT EXISTS devices (
               id SERIAL PRIMARY KEY,
@@ -88,7 +88,7 @@ module TsTest
             );
           SQL
         )
-        PostgresRecord.connection.execute(
+        event_model.connection.execute(
           <<~SQL
             CREATE TABLE IF NOT EXISTS events (
               id SERIAL PRIMARY KEY,
@@ -107,17 +107,17 @@ module TsTest
       end
 
       def drop_tables!
-        PostgresRecord.connection.execute(
+        event_model.connection.execute(
           <<~SQL
             DROP TABLE IF EXISTS events;
           SQL
         )
-        PostgresRecord.connection.execute(
+        event_model.connection.execute(
           <<~SQL
             DROP TABLE IF EXISTS devices;
           SQL
         )
-        PostgresRecord.connection.execute(
+        event_model.connection.execute(
           <<~SQL
             DROP TABLE IF EXISTS users;
           SQL
@@ -125,7 +125,7 @@ module TsTest
       end
 
       def insert_events!(count)
-        PostgresRecord.connection.execute(
+        event_model.connection.execute(
           <<~SQL
             INSERT INTO events (value, action, image_data, device_id, created_at)
             SELECT random()::float,
@@ -139,7 +139,7 @@ module TsTest
       end
 
       def insert_devices!(count)
-        PostgresRecord.connection.execute(
+        event_model.connection.execute(
           <<~SQL
             INSERT INTO devices (name, user_id, created_at)
             SELECT MD5(random()::text),
@@ -151,7 +151,7 @@ module TsTest
       end
 
       def insert_users!(count)
-        PostgresRecord.connection.execute(
+        event_model.connection.execute(
           <<~SQL
             INSERT INTO users (name, created_at)
             SELECT MD5(random()::text),
@@ -162,9 +162,9 @@ module TsTest
       end
 
       def truncate_tables!
-        PostgresRecord.connection.execute('TRUNCATE TABLE events')
-        PostgresRecord.connection.execute('TRUNCATE TABLE devices')
-        PostgresRecord.connection.execute('TRUNCATE TABLE users')
+        event_model.connection.execute('TRUNCATE TABLE events')
+        event_model.connection.execute('TRUNCATE TABLE devices')
+        event_model.connection.execute('TRUNCATE TABLE users')
       end
 
       def ten_thousand_inserts_prepare!
@@ -214,6 +214,7 @@ module TsTest
         insert_users!(10_000)
         insert_devices!(20_000)
         insert_events!(TsTest.config.fetch(:min_records_in_table))
+        finish = Time.now.to_i
         print "(#{finish - start}s)"
       end
 
@@ -228,6 +229,7 @@ module TsTest
         insert_users!(10_000)
         insert_devices!(20_000)
         insert_events!(TsTest.config.fetch(:max_records_in_table))
+        finish = Time.now.to_i
         print "(#{finish - start}s)"
       end
 

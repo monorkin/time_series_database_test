@@ -74,9 +74,9 @@ module TsTest
         Thread.new do
           10_000.times do
             event_model
-              .select('SUM(value), EXTRACT(year FROM created_at), COUNT(devices.id), COUNT(users.id)')
+              .select('SUM(events.value), EXTRACT(year FROM events.created_at), COUNT(devices.id), COUNT(users.id)')
               .joins(:device, :user)
-              .group('EXTRACT(year FROM created_at)')
+              .group('EXTRACT(year FROM events.created_at)')
               .order(id: :desc).first
           end
         end

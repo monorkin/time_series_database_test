@@ -39,8 +39,8 @@ module TsTest
     def runner
       @runner ||= begin
         runner_class =
-          "TsTest::Runners::#{database.to_s.humanize}Runner".safe_constantize
-        return unless runner_class
+          "TsTest::Runners::#{database.to_s.camelize}Runner".safe_constantize
+        raise("No runner found for #{database.to_s.camelize}") unless runner_class
 
         runner_class.new(options)
       end

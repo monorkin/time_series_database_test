@@ -7,11 +7,15 @@ databases:
   postgres:
     adapter: postgresql
     url: 'postgres://postgres:postgres@postgres:5432/postgres'
-    pool: 10
+    pool: 20
+  timescale_db:
+    adapter: postgresql
+    url: 'postgres://postgres:postgres@timescaledb:5432/postgres'
+    pool: 20
 
 test_cases:
   # - ten_thousand_inserts
-  - parallel_simple_reads_and_writes_with_min_records
+  # - parallel_simple_reads_and_writes_with_min_records
   # - parallel_simple_reads_and_writes_with_max_records
-  # - parallel_complex_reads_and_writes_with_min_records
+  - parallel_complex_reads_and_writes_with_min_records
   # - parallel_complex_reads_and_writes_with_max_records
