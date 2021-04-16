@@ -10,138 +10,62 @@ module TsTest
         self.abstract_class = true
       end
 
-      execute(
-        TsTest.config.dig(:databases, :click_house),
-        'CREATE DATABASE IF NOT EXISTS test;'
-      )
-
       ClickHouseRecord.establish_connection(
         TsTest.config.dig(:databases, :click_house)
       )
 
       build_models_for ClickHouseRecord, random_function: 'RAND()'
 
-      def prepare!
-        drop_tables!
-
-        puts 'Creating users table' if verbose?
-
+      def create_users_table!
         execute(
           <<~SQL
             CREATE TABLE IF NOT EXISTS users (
-              id SERIAL PRIMARY KEY,
+              id UInt64,
               name VARCHAR(255),
               created_at TIMESTAMP
-            );
+            )
+            ENGINE = MergeTree()
+            PARTITION BY toYYYYMM(created_at)
+            ORDER BY (created_at, intHash32(id))
+            SAMPLE BY intHash32(id)
           SQL
         )
+      end
 
-        puts 'Creating devices table' if verbose?
-
+      def create_devices_table!
         execute(
           <<~SQL
             CREATE TABLE IF NOT EXISTS devices (
-              id SERIAL PRIMARY KEY,
+              id UInt64,
               name VARCHAR(255),
-              user_id INT8,
+              user_id UInt64,
               created_at TIMESTAMP
-            );
+            )
+            ENGINE = MergeTree()
+            PARTITION BY toYYYYMM(created_at)
+            ORDER BY (created_at, intHash32(user_id))
+            SAMPLE BY intHash32(user_id)
           SQL
         )
+      end
 
-        puts 'Creating events table' if verbose?
-
+      def create_events_table!
         execute(
           <<~SQL
             CREATE TABLE IF NOT EXISTS events (
-              id SERIAL PRIMARY KEY,
-              value FLOAT64,
-              action STRING,
-              image_data STRING,
-              device_id UINT8,
+              id UInt64,
+              value Float64,
+              action String,
+              image_data String,
+              device_id UInt64,
               created_at TIMESTAMP
-            );
+            )
+            ENGINE = MergeTree()
+            PARTITION BY toYYYYMM(created_at)
+            ORDER BY (created_at, intHash32(device_id))
+            SAMPLE BY intHash32(device_id)
           SQL
         )
-
-        puts 'Creating users' if verbose?
-        insert_users!(TsTest.config.fetch(:user_count))
-
-        puts 'Creating devices' if verbose?
-        insert_devices!(TsTest.config.fetch(:device_count))
-
-        puts 'Creating events' if verbose?
-        insert_events!(TsTest.config.fetch(:event_count))
-      end
-
-      def teardown!
-        drop_tables!
-      end
-
-      def drop_tables!
-        puts 'Dropping events table' if verbose?
-
-        execute(
-          <<~SQL
-            DROP TABLE IF EXISTS events;
-          SQL
-        )
-
-        puts 'Dropping devices table' if verbose?
-
-        execute(
-          <<~SQL
-            DROP TABLE IF EXISTS devices;
-          SQL
-        )
-
-        puts 'Dropping users table' if verbose?
-
-        execute(
-          <<~SQL
-            DROP TABLE IF EXISTS users;
-          SQL
-        )
-      end
-
-      def insert_events!(count)
-        count.times do |i|
-          execute(
-            <<~SQL
-              INSERT INTO events (value, action, image_data, device_id, created_at)
-              VALUES (RAND(),
-                     MD5(RAND()),
-                     '{"foo": "bar"}',
-                     (SELECT id FROM devices ORDER BY RAND() LIMIT 1),
-                     TIMESTAMPADD(SECOND, #{i}, NOW()))
-            SQL
-          )
-        end
-      end
-
-      def insert_devices!(count)
-        count.times do |i|
-          execute(
-            <<~SQL
-              INSERT INTO devices (name, user_id, created_at)
-              VALUES (MD5(RAND()),
-                     (SELECT id FROM users ORDER BY RAND() LIMIT 1),
-                     TIMESTAMPADD(SECOND, #{i}, NOW()))
-            SQL
-          )
-        end
-      end
-
-      def insert_users!(count)
-        count.times do |i|
-          execute(
-            <<~SQL
-              INSERT INTO users (name, created_at)
-              VALUES (MD5(RAND()),
-                     TIMESTAMPADD(SECOND, #{i}, NOW()))
-            SQL
-          )
-        end
       end
     end
   end

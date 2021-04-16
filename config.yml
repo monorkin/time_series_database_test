@@ -10,8 +10,7 @@ databases:
   # elastic:
   click_house:
     adapter: clickhouse
-    database: test
-    host: clickhouse
+    url: 'clickhouse://clickhouse:password1234@clickhouse/test'
     pool: 20
   maria_db:
     adapter: mysql2

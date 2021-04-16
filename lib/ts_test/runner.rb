@@ -11,6 +11,14 @@ module TsTest
     attr_reader :options
     attr_reader :results
 
+    delegate :drop_table,
+             :create_table,
+             :table_exists?,
+             :add_index,
+             :remove_index,
+             :execute,
+             to: :connection
+
     def self.execute(connection_options, sql)
       model = Class.new(ActiveRecord::Base) do
         self.abstract_class = true
@@ -244,6 +252,120 @@ module TsTest
       true
     end
 
+    def prepare!
+      unless table_exists?('users')
+        puts 'Creating users table' if verbose?
+        create_users_table!
+      end
+
+      unless table_exists?('devices')
+        puts 'Creating devices table' if verbose?
+        create_devices_table!
+      end
+
+      unless table_exists?('events')
+        puts 'Creating events table' if verbose?
+        create_events_table!
+      end
+
+      desired_count = TsTest.config.fetch(:user_count)
+      current_count = user_model.count
+      delta = desired_count - current_count
+      if delta.positive?
+        puts "Creating #{delta} users" if verbose?
+        insert_users!(delta, current_count + 1)
+      end
+
+      desired_count = TsTest.config.fetch(:device_count)
+      current_count = device_model.count
+      delta = desired_count - current_count
+      if delta.positive?
+        puts "Creating #{delta} devices" if verbose?
+        insert_devices!(delta, current_count + 1)
+      end
+
+      desired_count = TsTest.config.fetch(:event_count)
+      current_count = event_model.count
+      delta = desired_count - current_count
+      if delta.positive?
+        puts "Creating #{delta} events" if verbose?
+        insert_events!(delta, current_count + 1)
+      end
+    end
+
+    def create_users_table!
+      create_table :users do |t|
+        t.string :name
+        t.datetime :created_at
+      end
+    end
+
+    def create_devices_table!
+      create_table :devices do |t|
+        t.string :name
+        t.foreign_key :user_id
+        t.datetime :created_at
+      end
+    end
+
+    def create_events_table!
+      create_table :events do |t|
+        t.float :value
+        t.string :action
+        t.string :image_data
+        t.foreign_key :device_id
+        t.datetime :created_at
+      end
+    end
+
+    def insert_events!(count, starting_at = 0)
+      count.times do |i|
+        event_model.random.tap do |r|
+          r.id = starting_at + i
+          r.created_at = i.seconds.from_now
+        end.save!
+      end
+    end
+
+    def insert_devices!(count, starting_at = 0)
+      count.times do |i|
+        device_model.random.tap do |r|
+          r.id = starting_at + i
+          r.created_at = i.seconds.from_now
+        end.save!
+      end
+    end
+
+    def insert_users!(count, starting_at = 0)
+      count.times do |i|
+        user_model.random.tap do |r|
+          r.id = starting_at + i
+          r.created_at = i.seconds.from_now
+        end.save!
+      end
+    end
+
+    def teardown!
+      drop_tables!
+    end
+
+    def drop_tables!
+      if table_exists?('events')
+        puts 'Dropping events table' if verbose?
+        drop_table('events')
+      end
+
+      if table_exists?('devices')
+        puts 'Dropping devices table' if verbose?
+        drop_table('devices')
+      end
+
+      if table_exists?('users')
+        puts 'Dropping users table' if verbose?
+        drop_table('users')
+      end
+    end
+
     private
 
     def call_if_responds_to(method_name)
@@ -265,13 +387,23 @@ module TsTest
       !!options[:teardown]
     end
 
-    def execute(sql)
-      parent_model.connection.execute(sql)
+    def connection
+      parent_model.connection
     end
 
     def parent_model
       self.class.parent_model ||
         raise("No parent model defined for runner #{self.class}")
+    end
+
+    def user_model
+      self.class.model(:user) ||
+        raise("#{self.class} didn't specify a User model using `model :user, User`")
+    end
+
+    def device_model
+      self.class.model(:device) ||
+        raise("#{self.class} didn't specify a Device model using `model :device, Device`")
     end
 
     def event_model
