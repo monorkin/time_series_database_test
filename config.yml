@@ -8,14 +8,6 @@ parallel_writers: 2
 databases:
   # influx_db:
   # elastic:
-  click_house:
-    adapter: clickhouse
-    url: 'clickhouse://clickhouse:password1234@clickhouse/test'
-    pool: 20
-  maria_db:
-    adapter: mysql2
-    url: 'mysql2://root:password1234@mariadb/test'
-    pool: 20
   postgres:
     adapter: postgresql
     url: 'postgres://postgres:postgres@postgres:5432/postgres'
@@ -23,6 +15,14 @@ databases:
   timescale_db:
     adapter: postgresql
     url: 'postgres://postgres:postgres@timescaledb:5432/postgres'
+    pool: 20
+  click_house:
+    adapter: clickhouse
+    url: 'clickhouse://clickhouse:password1234@clickhouse/test'
+    pool: 20
+  maria_db:
+    adapter: mysql2
+    url: 'mysql2://root:password1234@mariadb/test'
     pool: 20
 
 test_cases:
